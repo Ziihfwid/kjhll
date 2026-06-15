@@ -1,0 +1,136 @@
+;----Aim Assist v4.00 v1----
+#Persistent
+#KeyHistory, 0
+#NoEnv
+#HotKeyInterval 1
+#MaxHotkeysPerInterval 127
+#InstallKeybdHook
+#UseHook
+#SingleInstance, Force
+SetKeyDelay,-0 8
+SetControlDelay, -1
+SetMouseDelay, -1
+SetWinDelay,-1
+SendMode, InputThenPlay
+SetBatchLines,-1
+ListLines, Off
+CoordMode, Pixel, Screen, RGB
+CoordMode, Mouse, Screen
+PID := DllCall("GetCurrentProcessId")
+Process, Priority, %PID%, Normal
+ 
+ColVn := 0
+ZeroX := 960
+ZeroY := 540
+CFovX := 155  ; square research in width
+CFovY := 155  ;square research in height
+ScanL := ZeroX - CFovX
+ScanT := ZeroY - CFovY
+ScanR := ZeroX + CFovX
+ScanB := ZeroY + CFovY
+
+;Counter-Terrorists
+F4::
+Loop  {
+GetKeyState, Mouse2, LButton, P
+PixelSearch, AimPixelX, AimPixelY, ScanL, ScanT, ScanR, ScanB, 0x5B563B, ColVn, Fast RGB ; searching color of ennemy
+if errorlevel = 0
+
+{
+
+GoSub GetAimOffset
+GoSub GetAimMoves2
+
+GoSub MouseMoves
+GoSub AntiShake
+}
+}
+
+GetAimMoves2:
+RootX := Floor(( AimPixelX - A_ScreenWidth/2 + 95)* 0.015) ; 95 editable = aim lock speed / 0.015 = offset where the mouse will be lock left right
+ x := RootX * DirX
+Return
+
+;Terrorist
+F3::
+Loop  {
+GetKeyState, Mouse2, LButton, P
+PixelSearch, AimPixelX, AimPixelY, ScanL, ScanT, ScanR, ScanB, 0x644325, ColVn, Fast RGB
+if errorlevel != 0
+PixelSearch, AimPixelX, AimPixelY, ScanL, ScanT, ScanR, ScanB, 0x3B2614, ColVn, Fast RGB
+if errorlevel != 0
+PixelSearch, AimPixelX, AimPixelY, ScanL, ScanT, ScanR, ScanB, 0x3E2113, ColVn, Fast RGB
+if errorlevel != 0
+PixelSearch, AimPixelX, AimPixelY, ScanL, ScanT, ScanR, ScanB, 0x5C4B2C, ColVn, Fast RGB
+if errorlevel = 0
+
+{
+
+GoSub GetAimOffset
+GoSub GetAimMoves
+
+GoSub MouseMoves
+GoSub AntiShake
+
+}
+
+}
+
+
+GetAimOffset:
+ AimX := AimPixelX - ZeroX
+  If ( AimX > 0 ) {
+   DirX := 1
+  }
+  If ( AimX < 0 ) {
+   DirX := -1
+  }
+  If ( AimY > 0 ) {
+   DirY := 0
+  }
+  If ( AimY < 0 ) {
+   DirY := 0
+  }
+ AimOffsetX := AimX  * DirX
+Return
+ 
+GetAimMoves:
+RootX := Floor(( AimPixelX - A_ScreenWidth/2 + 95)* 0.015) ; same as up
+ x := RootX * DirX
+Return
+ 
+AntiShake:
+Abs(AimPixelX - A_ScreenWidth/2 + 11)> 60 ; abcisse on research point with offset
+	
+
+MouseMoves:
+If ( Mouse2 == "D" ) {
+DllCall("mouse_event", "UInt", 0x01, "Int", x, "Int", 0)
+	}
+return 
+
+INS:: Reload
+name: Compile AHK to EXE
+on: [push, workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download AHK Compiler
+        run: |
+          Invoke-WebRequest -Uri "https://autohotkey.com" -OutFile "ahk.zip"
+          Expand-Archive -Path "ahk.zip" -DestinationPath "AHK"
+
+      - name: Compile Script
+        run: |
+          .\AHK\Compiler\Ahk2Exe.exe /in "script.ahk" /out "my_automation.exe"
+
+      - name: Upload Finished EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: Compiled-Executable
+          path: my_automation.exe
