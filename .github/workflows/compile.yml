@@ -30,8 +30,7 @@ ScanR := ZeroX + CFovX
 ScanB := ZeroY + CFovY
 
 ;Counter-Terrorists
-F4::
-Loop  {
+F4::Loop  {
 GetKeyState, Mouse2, LButton, P
 PixelSearch, AimPixelX, AimPixelY, ScanL, ScanT, ScanR, ScanB, 0x5B563B, ColVn, Fast RGB ; searching color of ennemy
 if errorlevel = 0
